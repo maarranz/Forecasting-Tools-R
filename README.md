@@ -58,6 +58,8 @@ The 13 functions of the Python package, with the same names and arguments (excep
 
 Tests return a list of class `forecastingtools_test`, printed as a short report; every element can be extracted (`r$p.value`, `r$coefficients`, ...).
 
+[API documentation — rendered HTML](docs/index.html) · [Quarto source](docs/forecastingtools_Documentation.qmd) · in R: `?dm_test`, etc.
+
 **Vignette:** `vignette("forecasting-tools", package = "forecastingtools")`, the R version of the Python demonstration notebook. It includes the check that the Diebold–Mariano statistic equals the HAC t statistic of the loss differential on a constant (`lm(d ~ 1)` with `sandwich::NeweyWest()`), and static forecasting of a model with a level shift.
 
 ## Inference conventions

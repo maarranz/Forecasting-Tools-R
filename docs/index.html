@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Miguel A. Arranz, PhD" />
+  <title>forecastingtools (R): Public API</title>
+  <style>
+html {
+color: #1a1a1a;
+background-color: #fdfdfd;
+}
+body {
+margin: 0 auto;
+max-width: 36em;
+padding-left: 50px;
+padding-right: 50px;
+padding-top: 50px;
+padding-bottom: 50px;
+hyphens: auto;
+overflow-wrap: break-word;
+text-rendering: optimizeLegibility;
+font-kerning: normal;
+}
+@media (max-width: 600px) {
+body {
+font-size: 0.9em;
+padding: 12px;
+}
+h1 {
+font-size: 1.8em;
+}
+}
+@media print {
+html {
+background-color: white;
+}
+body {
+background-color: transparent;
+color: black;
+font-size: 12pt;
+}
+p, h2, h3 {
+orphans: 3;
+widows: 3;
+}
+h2, h3, h4 {
+page-break-after: avoid;
+}
+}
+p {
+margin: 1em 0;
+}
+a {
+color: #1a1a1a;
+}
+a:visited {
+color: #1a1a1a;
+}
+img {
+max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+margin-top: 1.4em;
+}
+h5, h6 {
+font-size: 1em;
+font-style: italic;
+}
+h6 {
+font-weight: normal;
+}
+ol, ul {
+padding-left: 1.7em;
+margin-top: 1em;
+}
+li > ol, li > ul {
+margin-top: 0;
+}
+blockquote {
+margin: 1em 0 1em 1.7em;
+padding-left: 1em;
+border-left: 2px solid #e6e6e6;
+color: #606060;
+}
+code {
+font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+font-size: 85%;
+margin: 0;
+hyphens: manual;
+}
+pre {
+margin: 1em 0;
+overflow: auto;
+}
+pre code {
+padding: 0;
+overflow: visible;
+overflow-wrap: normal;
+}
+.sourceCode {
+background-color: transparent;
+overflow: visible;
+}
+hr {
+background-color: #1a1a1a;
+border: none;
+height: 1px;
+margin: 1em 0;
+}
+table {
+margin: 1em 0;
+border-collapse: collapse;
+width: 100%;
+overflow-x: auto;
+display: block;
+font-variant-numeric: lining-nums tabular-nums;
+}
+table caption {
+margin-bottom: 0.75em;
+}
+tbody {
+margin-top: 0.5em;
+border-top: 1px solid #1a1a1a;
+border-bottom: 1px solid #1a1a1a;
+}
+th {
+border-top: 1px solid #1a1a1a;
+padding: 0.25em 0.5em 0.25em 0.5em;
+}
+td {
+padding: 0.125em 0.5em 0.25em 0.5em;
+}
+header {
+margin-bottom: 4em;
+text-align: center;
+}
+#TOC li {
+list-style: none;
+}
+#TOC ul {
+padding-left: 1.3em;
+}
+#TOC > ul {
+padding-left: 0;
+}
+#TOC a:not(:hover) {
+text-decoration: none;
+}
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+  <style>
+html { scroll-behavior: smooth; }
+body { max-width: 980px; margin: 48px auto; padding: 0 24px; color: #263442;
+font: 16px/1.6 system-ui, sans-serif; }
+h1,h2,h3 { line-height: 1.25; color: #173e63; }
+h2 { margin-top: 2.4rem; border-bottom: 1px solid #dbe3ea; padding-bottom: .4rem; }
+a { color: #145b91; text-underline-offset: 3px; }
+pre { background: #f3f6f8; border: 1px solid #dbe3ea; border-radius: 6px;
+padding: 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+code { font-family: ui-monospace, monospace; font-size: .88em; }
+table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+th,td { padding: 10px 12px; text-align: left; vertical-align: top;
+border-bottom: 1px solid #dbe3ea; }
+th { background: #edf3f8; }
+td:first-child { width: 65%; }
+table:has(th:nth-child(3)) td:first-child { width: auto; }
+table:has(th:nth-child(3)) td:nth-child(3) { width: 45%; }
+table code { white-space: normal; overflow-wrap: anywhere; }
+#TOC { background: #f3f6f8; padding: 16px 24px; border-radius: 6px; }
+@media (max-width: 600px) { body { margin: 24px auto; padding: 0 16px; }
+table { font-size: .76rem; } th,td { padding: 8px; } }
+table { font-size: 0.88rem; }
+</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">forecastingtools (R): Public API</h1>
+<p class="subtitle">Software reference for Applied Time Series
+Econometrics (ATSE)</p>
+<p class="author">Miguel A. Arranz, PhD</p>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#overview-and-purpose" id="toc-overview-and-purpose">Overview and purpose</a></li>
+<li><a href="#installation-and-loading" id="toc-installation-and-loading">Installation and loading</a></li>
+<li><a href="#static-forecasting" id="toc-static-forecasting">Static
+forecasting</a></li>
+<li><a href="#forecast-accuracy" id="toc-forecast-accuracy">Forecast
+accuracy</a></li>
+<li><a href="#diagnostics-of-a-single-forecast" id="toc-diagnostics-of-a-single-forecast">Diagnostics of a single
+forecast</a></li>
+<li><a href="#comparing-two-forecasts" id="toc-comparing-two-forecasts">Comparing two forecasts</a></li>
+<li><a href="#compact-api-summary" id="toc-compact-api-summary">Compact
+API summary</a></li>
+<li><a href="#course-resources-and-author" id="toc-course-resources-and-author">Course, resources, and
+author</a></li>
+</ul>
+</nav>
+<h2 id="overview-and-purpose">Overview and purpose</h2>
+<p><code>forecastingtools</code> is the R port of the Python package <a href="https://github.com/maarranz/Forecasting-Tools">Forecasting-Tools</a>,
+developed for the <strong>Applied Time Series Econometrics
+(ATSE)</strong> course at <strong>Universidad Carlos III de
+Madrid</strong>. It evaluates forecasts: static (sequential one-step)
+ARIMA forecasting, accuracy measures, diagnostics of a single forecast,
+and comparisons of two forecasts. Estimation, diagnostics and dynamic
+forecasting of ARIMA models are in the companion package <a href="https://github.com/maarranz/ARIMA-Tools-R">arimatools</a>.</p>
+<p>This document describes the software/API. The ATSE course material
+provides the econometric theory; the Labs provide fuller worked examples
+and exercises. The package exposes the <strong>13 public
+functions</strong> of the Python version, with the same names and
+arguments, except that <code>static_forecast()</code> takes the fitted
+model as <code>fit</code> and also accepts regressors through
+<code>xreg</code>.</p>
+<p>Two conventions hold throughout:</p>
+<ul>
+<li><strong>Forecast errors are actual minus forecast</strong>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>e</mi><mi>t</mi></msub><mo>=</mo><msub><mi>y</mi><mi>t</mi></msub><mo>−</mo><msub><mover><mi>y</mi><mo accent="true">̂</mo></mover><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">e_t = y_t - \hat y_t</annotation></semantics></math>.
+A positive mean error means underforecasting.</li>
+<li><strong>Nothing is aligned, removed or reordered.</strong> Actual
+values, forecasts and information variables are paired by position.
+Missing or non-finite values are errors, not silently dropped. If two
+inputs are <code>ts</code> objects, they must cover the same
+periods.</li>
+</ul>
+<p>Only <code>static_forecast()</code> needs a fitted model. Every other
+function takes plain numeric vectors (or <code>ts</code> objects), so it
+can evaluate forecasts from any source: ARIMA, ADL, a survey, or a
+published forecast.</p>
+<h3 id="what-r-already-provides">What R already provides</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">forecastingtools</th>
+<th style="text-align: left;">Closest existing R tool</th>
+<th style="text-align: left;">Why the function is kept</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>static_forecast()</code></td>
+<td style="text-align: left;"><code>fitted(Arima(y_full, model = fit))</code></td>
+<td style="text-align: left;">Standard errors and intervals per step,
+evaluation sample only, regressor checks</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>forecast_accuracy()</code></td>
+<td style="text-align: left;"><code>forecast::accuracy()</code></td>
+<td style="text-align: left;">Errors defined as actual − forecast, MAPE
+in percent, strict input checks; same output as Python</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>unbiasedness_test()</code></td>
+<td style="text-align: left;"><code>lm()</code> +
+<code>lmtest::coeftest()</code> +
+<code>car::linearHypothesis()</code></td>
+<td style="text-align: left;">One call, joint Mincer–Zarnowitz
+restriction, Statsmodels’ HAC conventions</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>weak_efficiency_test()</code></td>
+<td style="text-align: left;"><code>Box.test()</code>,
+<code>arima()</code></td>
+<td style="text-align: left;">MA(h−1) step for multistep forecasts, df
+adjustment</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>dm_test()</code></td>
+<td style="text-align: left;"><code>forecast::dm.test()</code></td>
+<td style="text-align: left;"><code>dm.test()</code> ties the bandwidth
+to h − 1 and always applies the HLN correction; here the bandwidth
+(automatic by default) and HLN are separate options.
+<code>dm.test(e1, e2, h = 1)</code> equals
+<code>dm_test(..., maxlags = 0, hln = TRUE)</code></td>
+</tr>
+</tbody>
+</table>
+<p>The MGN, orthogonality and encompassing tests have no direct R
+counterpart.</p>
+<h2 id="installation-and-loading">Installation and loading</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages(&quot;remotes&quot;)</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;maarranz/Forecasting-Tools-R&quot;</span>)</span></code></pre></div>
+<p>Dependencies (<code>forecast</code>, <code>sandwich</code>) are
+installed automatically. <code>arimatools</code> is optional: it builds
+the intervention regressors used with <code>static_forecast()</code>. To
+install a specific version, add the tag:
+<code>&quot;maarranz/Forecasting-Tools-R@v0.1.0&quot;</code>.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(forecast)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(forecastingtools)</span></code></pre></div>
+<h3 id="small-example-used-below">Small example used below</h3>
+<p>The data-generating process is an ARMA(1,1) with mean 100,
+<code>y[t] - 100 = 0.7*(y[t-1] - 100) + eps[t] + 0.4*eps[t-1]</code>,
+with innovation standard deviation 2. Of the 300 observations, the first
+250 are used for estimation and the last 50 for evaluation. Model 1 is
+the correctly specified ARMA(1,1); model 2 is a misspecified AR(1). (R’s
+random-number generator differs from NumPy’s, so the series is not the
+one in the Python documentation.)</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20261008</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="dv">100</span> <span class="sc">+</span> <span class="fu">arima.sim</span>(<span class="fu">list</span>(<span class="at">ar =</span> <span class="fl">0.7</span>, <span class="at">ma =</span> <span class="fl">0.4</span>), <span class="at">n =</span> <span class="dv">300</span>, <span class="at">sd =</span> <span class="dv">2</span>, <span class="at">n.start =</span> <span class="dv">500</span>))</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>estimation <span class="ot">&lt;-</span> <span class="fu">window</span>(y, <span class="at">end =</span> <span class="dv">250</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>actual <span class="ot">&lt;-</span> <span class="fu">window</span>(y, <span class="at">start =</span> <span class="dv">251</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>fit1 <span class="ot">&lt;-</span> <span class="fu">Arima</span>(estimation, <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>))</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> <span class="fu">Arima</span>(estimation, <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>))</span></code></pre></div>
+<p>Run the blocks below in sequence in the same session.
+<code>static_forecast()</code> returns a data frame. The accuracy
+measures return numbers. Tests return a list of class
+<code>forecastingtools_test</code>, which prints as a short report
+(hypothesis, statistic, p-value, decision, covariance, coefficient
+table); every element can be extracted, for example
+<code>r$p.value</code> or <code>r$coefficients</code>.</p>
+<h2 id="static-forecasting">Static forecasting</h2>
+<p>A <strong>static</strong> (sequential one-step) forecast keeps the
+estimated parameters fixed and, for each evaluation period, forecasts
+the next observation, then adds the actual value to the information set
+before the next forecast. Each actual value is used only after its own
+forecast. A <strong>dynamic</strong> forecast
+(<code>arimatools::dynamic_forecast()</code>) is issued once at the end
+of the sample and never uses later observations; the first static
+forecast equals the one-step dynamic forecast.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>sf1 <span class="ot">&lt;-</span> <span class="fu">static_forecast</span>(fit1, actual, <span class="at">level =</span> <span class="fl">0.95</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>sf2 <span class="ot">&lt;-</span> <span class="fu">static_forecast</span>(fit2, actual, <span class="at">level =</span> <span class="fl">0.95</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(sf1)</span></code></pre></div>
+<p>The result has one row per evaluation period, with columns
+<code>time</code>, <code>actual</code>, <code>forecast</code>,
+<code>error</code>, <code>se</code>, <code>lower</code> and
+<code>upper</code>, and attributes <code>level</code> and
+<code>conditional</code>. <code>actual</code> is a numeric vector or a
+<code>ts</code> that starts in the period after the estimation sample.
+Each step re-applies the fitted model to the extended series with
+<code>forecast::Arima(y, model = fit)</code>, which re-runs the Kalman
+filter without re-estimating the coefficients or the innovation
+variance. The intervals are conditional Gaussian prediction intervals:
+they ignore parameter-estimation uncertainty. The fitted model is not
+modified.</p>
+<p>Accepted models: nonseasonal fits from <code>forecast::Arima()</code>
+or <code>forecast::auto.arima()</code>, with a mean or drift. Rejected,
+with an explanation: <code>stats::arima()</code> fits (they do not store
+the series), seasonal models, and models with a Box–Cox transformation
+(<code>lambda</code>).</p>
+<p><strong>Models with regressors.</strong> The values of the regressors
+in the evaluation periods are supplied through <code>xreg</code>: a
+matrix with one row per evaluation period and the columns named as in
+estimation (a vector for a single regressor). A drift is handled
+automatically. There are two cases:</p>
+<ul>
+<li><strong>Interventions</strong> estimated in the estimation sample
+(AO, LS and TC columns from
+<code>arimatools::outlier_regressors()</code>) have a known future path:
+AO is 0, LS is 1 and TC keeps decaying.
+<code>arimatools::extend_interventions()</code> generates it, and values
+that contradict the definition are rejected. The forecasts are genuine
+ex ante forecasts.</li>
+</ul>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="fu">cumsum</span>(<span class="fu">rnorm</span>(<span class="dv">140</span>)), <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1990</span>, <span class="dv">1</span>), <span class="at">frequency =</span> <span class="dv">4</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>z[<span class="dv">60</span><span class="sc">:</span><span class="dv">140</span>] <span class="ot">&lt;-</span> z[<span class="dv">60</span><span class="sc">:</span><span class="dv">140</span>] <span class="sc">+</span> <span class="dv">5</span>                     <span class="co"># level shift in 2004Q4</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>z_est <span class="ot">&lt;-</span> <span class="fu">window</span>(z, <span class="at">end =</span> <span class="fu">c</span>(<span class="dv">2014</span>, <span class="dv">4</span>))</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>z_eva <span class="ot">&lt;-</span> <span class="fu">window</span>(z, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">2015</span>, <span class="dv">1</span>))</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>L <span class="ot">&lt;-</span> arimatools<span class="sc">::</span><span class="fu">outlier_regressors</span>(z_est, <span class="at">dates =</span> <span class="st">&quot;2004Q4&quot;</span>, <span class="at">types =</span> <span class="st">&quot;LS&quot;</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>fit_ls <span class="ot">&lt;-</span> <span class="fu">Arima</span>(z_est, <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>), <span class="at">xreg =</span> L)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>sf_ls <span class="ot">&lt;-</span> <span class="fu">static_forecast</span>(fit_ls, z_eva, <span class="at">xreg =</span> arimatools<span class="sc">::</span><span class="fu">extend_interventions</span>(L, <span class="dv">40</span>))</span></code></pre></div>
+<ul>
+<li><strong>Other regressors.</strong> A static forecast of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>y</mi><mi>t</mi></msub><annotation encoding="application/x-tex">y_t</annotation></semantics></math>
+uses
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mi>t</mi></msub><annotation encoding="application/x-tex">x_t</annotation></semantics></math>.
+If
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mi>t</mi></msub><annotation encoding="application/x-tex">x_t</annotation></semantics></math>
+is not known at the forecast origin (a contemporaneous stochastic
+regressor), the result is a <strong>conditional (ex post)
+forecast</strong>: it overstates real-time accuracy, its intervals
+ignore the uncertainty about
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mi>t</mi></msub><annotation encoding="application/x-tex">x_t</annotation></semantics></math>,
+and the efficiency and orthogonality tests no longer refer to the
+information at the origin. A message says so and
+<code>attr(result, &quot;conditional&quot;)</code> is <code>TRUE</code>. Lagged
+regressors known at the origin give ex ante forecasts.</li>
+</ul>
+<p>Outliers detected in the <em>evaluation</em> period cannot be added
+after estimation: that would use information from after the forecast
+origins.</p>
+<h2 id="forecast-accuracy">Forecast accuracy</h2>
+<p>With
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
+forecasts,</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">M</mi><mi mathvariant="normal">E</mi></mrow><mo>=</mo><mfrac displaystyle="false"><mn>1</mn><mi>n</mi></mfrac><mo>∑</mo><msub><mi>e</mi><mi>t</mi></msub><mo>,</mo><mspace width="1.0em"></mspace><mrow><mi mathvariant="normal">M</mi><mi mathvariant="normal">A</mi><mi mathvariant="normal">E</mi></mrow><mo>=</mo><mfrac displaystyle="false"><mn>1</mn><mi>n</mi></mfrac><mo>∑</mo><mrow><mo stretchy="true" form="prefix">|</mo><msub><mi>e</mi><mi>t</mi></msub><mo stretchy="true" form="postfix">|</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mrow><mi mathvariant="normal">M</mi><mi mathvariant="normal">S</mi><mi mathvariant="normal">E</mi></mrow><mo>=</mo><mfrac displaystyle="false"><mn>1</mn><mi>n</mi></mfrac><mo>∑</mo><msubsup><mi>e</mi><mi>t</mi><mn>2</mn></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mrow><mi mathvariant="normal">R</mi><mi mathvariant="normal">M</mi><mi mathvariant="normal">S</mi><mi mathvariant="normal">E</mi></mrow><mo>=</mo><msqrt><mrow><mi mathvariant="normal">M</mi><mi mathvariant="normal">S</mi><mi mathvariant="normal">E</mi></mrow></msqrt><mo>,</mo><mspace width="1.0em"></mspace><mrow><mi mathvariant="normal">M</mi><mi mathvariant="normal">A</mi><mi mathvariant="normal">P</mi><mi mathvariant="normal">E</mi></mrow><mo>=</mo><mfrac displaystyle="false"><mn>100</mn><mi>n</mi></mfrac><mo>∑</mo><mrow><mo stretchy="true" form="prefix">|</mo><msub><mi>e</mi><mi>t</mi></msub><mi>/</mi><msub><mi>y</mi><mi>t</mi></msub><mo stretchy="true" form="postfix">|</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">\mathrm{ME} = \tfrac1n \textstyle\sum e_t, \quad \mathrm{MAE} = \tfrac1n \sum |e_t|, \quad \mathrm{MSE} = \tfrac1n \sum e_t^2, \quad \mathrm{RMSE} = \sqrt{\mathrm{MSE}}, \quad \mathrm{MAPE} = \tfrac{100}{n} \sum |e_t / y_t|.</annotation></semantics></math></p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">forecast_accuracy</span>(actual, sf1<span class="sc">$</span>forecast)    <span class="co"># ME, MAE, MSE, RMSE, MAPE</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rmse</span>(actual, sf2<span class="sc">$</span>forecast)                 <span class="co"># one measure</span></span></code></pre></div>
+<p>The denominator is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>,
+with no degrees-of-freedom adjustment. ME measures signed bias, and
+positive and negative errors cancel; the other measures describe the
+size of the errors, and MSE and RMSE always rank models in the same way.
+MAPE is in percent and is undefined when an actual value is zero (an
+error is raised; the other measures accept zeros). These are descriptive
+measures: a smaller RMSE in one sample is not evidence that a model is
+better.</p>
+<h2 id="diagnostics-of-a-single-forecast">Diagnostics of a single
+forecast</h2>
+<p>All tests take <code>alpha = 0.05</code> (the significance level:
+<code>reject_null</code> is <code>p.value &lt; alpha</code>, and
+confidence intervals have coverage <code>1 - alpha</code>).</p>
+<p><strong>HAC inference.</strong> Unless stated otherwise, inference is
+Newey–West with Bartlett weights
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>−</mo><mi>j</mi><mi>/</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>L</mi><mo>+</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">1 - j/(L+1)</annotation></semantics></math>,
+no prewhitening and no small-sample adjustment, computed with
+<code>sandwich::NeweyWest(fit, lag = L, prewhite = FALSE, adjust = FALSE)</code>.
+This reproduces Statsmodels’ <code>cov_type = &quot;HAC&quot;</code> with
+<code>use_correction = False</code>, and therefore the Python results.
+<code>maxlags = NULL</code> selects the bandwidth
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>L</mi><mo>=</mo><mo>min</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>n</mi><mo>−</mo><mn>1</mn><mo>,</mo><mo stretchy="false" form="prefix">⌊</mo><mn>4</mn><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>n</mi><mi>/</mi><mn>100</mn><mo stretchy="true" form="postfix">)</mo></mrow><mrow><mn>2</mn><mi>/</mi><mn>9</mn></mrow></msup><mo stretchy="false" form="postfix">⌋</mo><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">L = \min(n-1, \lfloor 4 (n/100)^{2/9} \rfloor)</annotation></semantics></math>;
+an explicit <code>maxlags</code> must be a non-negative integer smaller
+than
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>.
+Note that <code>NeweyWest()</code> prewhitens and adjusts by default, so
+calling it with its defaults gives different standard errors.</p>
+<h3 id="unbiasedness">Unbiasedness</h3>
+<ul>
+<li><code>method = &quot;mean_error&quot;</code> estimates
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>e</mi><mi>t</mi></msub><mo>=</mo><mi>a</mi><mo>+</mo><msub><mi>u</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">e_t = a + u_t</annotation></semantics></math>
+and tests
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>0</mn></msub><mo>:</mo><mi>a</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">H_0: a = 0</annotation></semantics></math>;
+the estimate of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>a</mi><annotation encoding="application/x-tex">a</annotation></semantics></math>
+is the mean error.</li>
+<li><code>method = &quot;mincer_zarnowitz&quot;</code> estimates
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>y</mi><mi>t</mi></msub><mo>=</mo><mi>a</mi><mo>+</mo><mi>b</mi><msub><mover><mi>y</mi><mo accent="true">̂</mo></mover><mi>t</mi></msub><mo>+</mo><msub><mi>u</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">y_t = a + b \hat y_t + u_t</annotation></semantics></math>
+and tests the joint restriction
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>0</mn></msub><mo>:</mo><mi>a</mi><mo>=</mo><mn>0</mn><mo>,</mo><mi>b</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">H_0: a = 0, b = 1</annotation></semantics></math>.</li>
+</ul>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">unbiasedness_test</span>(actual, sf1<span class="sc">$</span>forecast)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">unbiasedness_test</span>(actual, sf1<span class="sc">$</span>forecast, <span class="at">method =</span> <span class="st">&quot;mincer_zarnowitz&quot;</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">unbiasedness_test</span>(actual, sf1<span class="sc">$</span>forecast, <span class="at">cov_type =</span> <span class="st">&quot;nonrobust&quot;</span>)</span></code></pre></div>
+<p>With <code>cov_type = &quot;HAC&quot;</code> (default) the mean-error test is a
+normal z test and the joint test an asymptotic
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>χ</mi><mn>2</mn></msup><mrow><mo stretchy="true" form="prefix">(</mo><mn>2</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\chi^2(2)</annotation></semantics></math>.
+With <code>cov_type = &quot;nonrobust&quot;</code> the covariance is the
+conventional OLS one: a Student
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>t</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>n</mi><mo>−</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">t(n-1)</annotation></semantics></math>
+test (the one-sample t test of the errors) or the classical
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>F</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>2</mn><mo>,</mo><mi>n</mi><mo>−</mo><mn>2</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">F(2, n-2)</annotation></semantics></math>
+test; <code>maxlags</code> must then be <code>NULL</code>.</p>
+<h3 id="weak-efficiency">Weak efficiency</h3>
+<p>Optimal one-step errors are serially uncorrelated; optimal
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>h</mi><annotation encoding="application/x-tex">h</annotation></semantics></math>-step
+errors from consecutive origins follow at most an
+MA(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">h-1</annotation></semantics></math>).</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">weak_efficiency_test</span>(actual, sf1<span class="sc">$</span>forecast, <span class="at">h =</span> <span class="dv">1</span>, <span class="at">lags =</span> <span class="dv">10</span>)</span></code></pre></div>
+<p>For <code>h = 1</code> the Ljung–Box test is applied to the errors,
+with <code>lags</code> degrees of freedom. For <code>h &gt; 1</code> an
+MA(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">h-1</annotation></semantics></math>)
+with a constant is estimated by exact maximum likelihood
+(<code>stats::arima(method = &quot;ML&quot;)</code>) and the test is applied to
+its residuals, with <code>lags - (h - 1)</code> degrees of freedom;
+<code>lags</code> must exceed
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">h-1</annotation></semantics></math>.
+The errors are centered, so this test does not examine bias.</p>
+<h3 id="orthogonality">Orthogonality</h3>
+<p>Estimates
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>e</mi><mi>t</mi></msub><mo>=</mo><mi>a</mi><mo>+</mo><mi>γ</mi><mi>′</mi><msub><mi>z</mi><mi>t</mi></msub><mo>+</mo><msub><mi>u</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">e_t = a + \gamma&#39; z_t + u_t</annotation></semantics></math>
+and tests
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>0</mn></msub><mo>:</mo><mi>a</mi><mo>=</mo><mn>0</mn><mo>,</mo><mi>γ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">H_0: a = 0, \gamma = 0</annotation></semantics></math>
+jointly, where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>z</mi><mi>t</mi></msub><annotation encoding="application/x-tex">z_t</annotation></semantics></math>
+are variables known when the forecast was made. Here
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>y</mi><mrow><mi>t</mi><mo>−</mo><mn>1</mn></mrow></msub><annotation encoding="application/x-tex">y_{t-1}</annotation></semantics></math>,
+built from the complete series so that the first evaluation row uses the
+last estimation observation:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>previous <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(y)[<span class="dv">250</span><span class="sc">:</span><span class="dv">299</span>]          <span class="co"># y[t-1] for t = 251, ..., 300</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">orthogonality_test</span>(actual, sf1<span class="sc">$</span>forecast, <span class="fu">cbind</span>(<span class="at">previous =</span> previous))</span></code></pre></div>
+<p><code>information</code> is a vector (one variable), a matrix or a
+data frame, with one row per forecast and no intercept column.
+<strong>Timing is your responsibility</strong>: the function does not
+shift or align anything, and information not available at the forecast
+origin introduces look-ahead bias. The inference options are those of
+<code>unbiasedness_test()</code> (HAC
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>χ</mi><mn>2</mn></msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\chi^2(k)</annotation></semantics></math>
+or classical
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>F</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>k</mi><mo>,</mo><mi>n</mi><mo>−</mo><mi>k</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">F(k, n-k)</annotation></semantics></math>,
+with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
+counting the intercept). <code>h</code> is recorded as metadata; for
+overlapping multistep errors use HAC with <code>maxlags</code> of at
+least
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">h-1</annotation></semantics></math>,
+which is reported in <code>bandwidth_covers_overlap</code>.</p>
+<h2 id="comparing-two-forecasts">Comparing two forecasts</h2>
+<p>The comparison functions take <code>actual</code>,
+<code>forecast1</code> and <code>forecast2</code>. Model 1 here is the
+ARMA(1,1) and model 2 the AR(1).</p>
+<h3 id="morgangrangernewbold">Morgan–Granger–Newbold</h3>
+<p>With
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>u</mi><mi>t</mi></msub><mo>=</mo><msub><mi>e</mi><mrow><mn>1</mn><mi>t</mi></mrow></msub><mo>+</mo><msub><mi>e</mi><mrow><mn>2</mn><mi>t</mi></mrow></msub></mrow><annotation encoding="application/x-tex">u_t = e_{1t} + e_{2t}</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>v</mi><mi>t</mi></msub><mo>=</mo><msub><mi>e</mi><mrow><mn>1</mn><mi>t</mi></mrow></msub><mo>−</mo><msub><mi>e</mi><mrow><mn>2</mn><mi>t</mi></mrow></msub></mrow><annotation encoding="application/x-tex">v_t = e_{1t} - e_{2t}</annotation></semantics></math>,
+estimates
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>u</mi><mi>t</mi></msub><mo>=</mo><mi>a</mi><mo>+</mo><mi>b</mi><msub><mi>v</mi><mi>t</mi></msub><mo>+</mo><msub><mi>ε</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">u_t = a + b v_t + \varepsilon_t</annotation></semantics></math>
+and tests
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>0</mn></msub><mo>:</mo><mi>b</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">H_0: b = 0</annotation></semantics></math>,
+that is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">V</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi></mrow><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>e</mi><mn>1</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mrow><mi mathvariant="normal">V</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi></mrow><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>e</mi><mn>2</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\mathrm{Var}(e_1) = \mathrm{Var}(e_2)</annotation></semantics></math>.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mgn_test</span>(actual, sf1<span class="sc">$</span>forecast, sf2<span class="sc">$</span>forecast)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mgn_test</span>(actual, sf1<span class="sc">$</span>forecast, sf2<span class="sc">$</span>forecast, <span class="at">cov_type =</span> <span class="st">&quot;nonrobust&quot;</span>)</span></code></pre></div>
+<p><strong>Only if both errors have zero population means</strong> is
+this a test of equal mean squared forecast errors; otherwise it compares
+centered error variances. The conventional version equals the classical
+statistic
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>r</mi><msqrt><mrow><mrow><mo stretchy="true" form="prefix">(</mo><mi>n</mi><mo>−</mo><mn>2</mn><mo stretchy="true" form="postfix">)</mo></mrow><mi>/</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msup><mi>r</mi><mn>2</mn></msup><mo stretchy="true" form="postfix">)</mo></mrow></mrow></msqrt></mrow><annotation encoding="application/x-tex">r\sqrt{(n-2)/(1-r^2)}</annotation></semantics></math>
+with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>r</mi><mo>=</mo><mrow><mi mathvariant="normal">C</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">r</mi></mrow><mrow><mo stretchy="true" form="prefix">(</mo><mi>u</mi><mo>,</mo><mi>v</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">r = \mathrm{Corr}(u, v)</annotation></semantics></math>.
+The result also reports <code>mean_errors</code>, <code>mse</code> and
+<code>mse_difference</code> (descriptive only).</p>
+<h3 id="dieboldmariano">Diebold–Mariano</h3>
+<p>With
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>d</mi><mi>t</mi></msub><mo>=</mo><mi>L</mi><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>e</mi><mrow><mn>1</mn><mi>t</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>−</mo><mi>L</mi><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>e</mi><mrow><mn>2</mn><mi>t</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">d_t = L(e_{1t}) - L(e_{2t})</annotation></semantics></math>,
+tests
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mn>0</mn></msub><mo>:</mo><mi>E</mi><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>d</mi><mi>t</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">H_0: E(d_t) = 0</annotation></semantics></math>
+directly, without assuming zero-mean errors. Negative values of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>d</mi><mo accent="true">‾</mo></mover><annotation encoding="application/x-tex">\bar d</annotation></semantics></math>
+favour model 1.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dm_test</span>(actual, sf1<span class="sc">$</span>forecast, sf2<span class="sc">$</span>forecast)                       <span class="co"># squared loss</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dm_test</span>(actual, sf1<span class="sc">$</span>forecast, sf2<span class="sc">$</span>forecast, <span class="at">loss =</span> <span class="st">&quot;absolute&quot;</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">dm_test</span>(actual, sf1<span class="sc">$</span>forecast, sf2<span class="sc">$</span>forecast, <span class="at">hln =</span> <span class="cn">TRUE</span>)           <span class="co"># HLN correction</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">dm_test</span>(actual, sf1<span class="sc">$</span>forecast, sf2<span class="sc">$</span>forecast, <span class="at">alternative =</span> <span class="st">&quot;less&quot;</span>) <span class="co"># model 1 better</span></span></code></pre></div>
+<p>The statistic is computed directly as
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>d</mi><mo accent="true">‾</mo></mover><mi>/</mi><msqrt><mrow><mover><mi>Ω</mi><mo accent="true">̂</mo></mover><mi>/</mi><mi>n</mi></mrow></msqrt></mrow><annotation encoding="application/x-tex">\bar d / \sqrt{\hat\Omega / n}</annotation></semantics></math>,
+with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>Ω</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\hat\Omega</annotation></semantics></math>
+the Bartlett long-run variance of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>d</mi><mi>t</mi></msub><annotation encoding="application/x-tex">d_t</annotation></semantics></math>.
+It is exactly the HAC t statistic of the regression of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>d</mi><mi>t</mi></msub><annotation encoding="application/x-tex">d_t</annotation></semantics></math>
+on a constant:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> (actual <span class="sc">-</span> sf1<span class="sc">$</span>forecast)<span class="sc">^</span><span class="dv">2</span> <span class="sc">-</span> (actual <span class="sc">-</span> sf2<span class="sc">$</span>forecast)<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(d <span class="sc">~</span> <span class="dv">1</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>r <span class="ot">&lt;-</span> <span class="fu">dm_test</span>(actual, sf1<span class="sc">$</span>forecast, sf2<span class="sc">$</span>forecast)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="fu">coef</span>(reg) <span class="sc">/</span> <span class="fu">sqrt</span>(sandwich<span class="sc">::</span><span class="fu">NeweyWest</span>(reg, <span class="at">lag =</span> r<span class="sc">$</span>maxlags, <span class="at">prewhite =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">adjust =</span> <span class="cn">FALSE</span>))      <span class="co"># equals r$dm_statistic</span></span></code></pre></div>
+<p><code>hln = TRUE</code> multiplies the statistic by the
+Harvey–Leybourne–Newbold factor
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msqrt><mrow><mrow><mo stretchy="true" form="prefix">(</mo><mi>n</mi><mo>+</mo><mn>1</mn><mo>−</mo><mn>2</mn><mi>h</mi><mo>+</mo><mi>h</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>h</mi><mo>−</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow><mi>/</mi><mi>n</mi><mo stretchy="true" form="postfix">)</mo></mrow><mi>/</mi><mi>n</mi></mrow></msqrt><annotation encoding="application/x-tex">\sqrt{(n+1-2h+h(h-1)/n)/n}</annotation></semantics></math>
+and uses a Student
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>t</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>n</mi><mo>−</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">t(n-1)</annotation></semantics></math>;
+otherwise the reference is the standard normal. <code>h</code> is used
+only by this correction: it does not shift observations or choose the
+bandwidth.</p>
+<h3 id="forecast-encompassing">Forecast encompassing</h3>
+<p>Does forecast 1 contain all the useful (linear) information in
+forecast 2, or the reverse? The two directions are separate hypotheses:
+<code>direction = &quot;1_encompasses_2&quot;</code> (default) or
+<code>&quot;2_encompasses_1&quot;</code>.</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;"><code>method</code></th>
+<th style="text-align: left;">Regression (direction 1)</th>
+<th style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>H</mi><mn>0</mn></msub><annotation encoding="application/x-tex">H_0</annotation></semantics></math></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>&quot;difference&quot;</code> (default)</td>
+<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>e</mi><mrow><mn>1</mn><mi>t</mi></mrow></msub><mo>=</mo><mi>β</mi><mrow><mo stretchy="true" form="prefix">(</mo><msub><mover><mi>y</mi><mo accent="true">̂</mo></mover><mrow><mn>1</mn><mi>t</mi></mrow></msub><mo>−</mo><msub><mover><mi>y</mi><mo accent="true">̂</mo></mover><mrow><mn>2</mn><mi>t</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><msub><mi>u</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">e_{1t} = \beta (\hat y_{1t} - \hat y_{2t}) + u_t</annotation></semantics></math></td>
+<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta = 0</annotation></semantics></math></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>&quot;cross_forecast&quot;</code></td>
+<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>e</mi><mrow><mn>1</mn><mi>t</mi></mrow></msub><mo>=</mo><mi>δ</mi><msub><mover><mi>y</mi><mo accent="true">̂</mo></mover><mrow><mn>2</mn><mi>t</mi></mrow></msub><mo>+</mo><msub><mi>u</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">e_{1t} = \delta \hat y_{2t} + u_t</annotation></semantics></math></td>
+<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>δ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\delta = 0</annotation></semantics></math></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>&quot;unrestricted&quot;</code></td>
+<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>y</mi><mi>t</mi></msub><mo>=</mo><msub><mi>a</mi><mn>0</mn></msub><mo>+</mo><msub><mi>a</mi><mn>1</mn></msub><msub><mover><mi>y</mi><mo accent="true">̂</mo></mover><mrow><mn>1</mn><mi>t</mi></mrow></msub><mo>+</mo><msub><mi>a</mi><mn>2</mn></msub><msub><mover><mi>y</mi><mo accent="true">̂</mo></mover><mrow><mn>2</mn><mi>t</mi></mrow></msub><mo>+</mo><msub><mi>u</mi><mi>t</mi></msub></mrow><annotation encoding="application/x-tex">y_t = a_0 + a_1 \hat y_{1t} + a_2 \hat y_{2t} + u_t</annotation></semantics></math></td>
+<td style="text-align: left;"><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>a</mi><mn>1</mn></msub><mo>,</mo><msub><mi>a</mi><mn>2</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>,</mo><mn>0</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">(a_1, a_2) = (1, 0)</annotation></semantics></math></td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">encompassing_test</span>(actual, sf1<span class="sc">$</span>forecast, sf2<span class="sc">$</span>forecast)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">encompassing_test</span>(actual, sf1<span class="sc">$</span>forecast, sf2<span class="sc">$</span>forecast, <span class="at">direction =</span> <span class="st">&quot;2_encompasses_1&quot;</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">encompassing_test</span>(actual, sf1<span class="sc">$</span>forecast, sf2<span class="sc">$</span>forecast, <span class="at">method =</span> <span class="st">&quot;unrestricted&quot;</span>)</span></code></pre></div>
+<p>In direction 2 the dependent variable is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>e</mi><mrow><mn>2</mn><mi>t</mi></mrow></msub><annotation encoding="application/x-tex">e_{2t}</annotation></semantics></math>
+(difference and cross-forecast; the sign of the forecast difference is
+the same in both directions) or the null is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>a</mi><mn>1</mn></msub><mo>,</mo><msub><mi>a</mi><mn>2</mn></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">(a_1, a_2) = (0, 1)</annotation></semantics></math>
+(unrestricted). <code>include_intercept = TRUE</code> adds an
+unrestricted intercept to the difference and cross-forecast regressions;
+the unrestricted regression always has one. Inference is always HAC:
+normal for one restriction,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>χ</mi><mn>2</mn></msup><mrow><mo stretchy="true" form="prefix">(</mo><mn>2</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\chi^2(2)</annotation></semantics></math>
+for the unrestricted test. Not rejecting means the restriction cannot be
+rejected, not that it holds; rejecting does not mean the competing
+forecast is more accurate.</p>
+<h2 id="compact-api-summary">Compact API summary</h2>
+<p><code>fit</code> is a nonseasonal model from
+<code>forecast::Arima()</code> or <code>forecast::auto.arima()</code>.
+All other inputs are numeric vectors or <code>ts</code> objects paired
+by position.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Public call</th>
+<th style="text-align: left;">Return / contents</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>static_forecast(fit, actual, level = 0.95, xreg = NULL)</code></td>
+<td style="text-align: left;">data frame: time, actual, forecast, error,
+se, lower, upper</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>me(actual, forecast)</code></td>
+<td style="text-align: left;">number: mean error</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>mae(actual, forecast)</code></td>
+<td style="text-align: left;">number: mean absolute error</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>mse(actual, forecast)</code></td>
+<td style="text-align: left;">number: mean squared error</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>rmse(actual, forecast)</code></td>
+<td style="text-align: left;">number: root mean squared error</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>mape(actual, forecast)</code></td>
+<td style="text-align: left;">number: mean absolute percentage error
+(percent)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>forecast_accuracy(actual, forecast)</code></td>
+<td style="text-align: left;">named vector: ME, MAE, MSE, RMSE,
+MAPE</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>unbiasedness_test(actual, forecast, method = &quot;mean_error&quot;, cov_type = &quot;HAC&quot;, maxlags = NULL, alpha = 0.05)</code></td>
+<td style="text-align: left;">test: mean-error or Mincer–Zarnowitz</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>weak_efficiency_test(actual, forecast, h = 1, lags = 10, alpha = 0.05)</code></td>
+<td style="text-align: left;">test: Ljung–Box on errors or MA(h−1)
+residuals</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>orthogonality_test(actual, forecast, information, h = 1, cov_type = &quot;HAC&quot;, maxlags = NULL, alpha = 0.05)</code></td>
+<td style="text-align: left;">test: joint Wald test of intercept and
+information coefficients</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>mgn_test(actual, forecast1, forecast2, cov_type = &quot;HAC&quot;, maxlags = NULL, alpha = 0.05)</code></td>
+<td style="text-align: left;">test: Morgan–Granger–Newbold slope</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>dm_test(actual, forecast1, forecast2, loss = &quot;squared&quot;, h = 1, alternative = &quot;two-sided&quot;, maxlags = NULL, hln = FALSE, alpha = 0.05)</code></td>
+<td style="text-align: left;">test: Diebold–Mariano, optional HLN</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>encompassing_test(actual, forecast1, forecast2, method = &quot;difference&quot;, direction = &quot;1_encompasses_2&quot;, include_intercept = FALSE, maxlags = NULL, alpha = 0.05)</code></td>
+<td style="text-align: left;">test: forecast encompassing</td>
+</tr>
+</tbody>
+</table>
+<p>A test result contains the same fields as the Python dictionary, with
+three changes: <code>pvalue</code> is <code>p.value</code>;
+<code>parameters</code>, <code>standard_errors</code> and
+<code>confidence_intervals</code> are combined in one
+<code>coefficients</code> data frame (<code>term</code>,
+<code>estimate</code>, <code>std.error</code>, <code>conf.low</code>,
+<code>conf.high</code>); and Python’s <code>None</code> is
+<code>NA</code>. Use <code>names(r)</code> to list the fields, and
+<code>?dm_test</code> (etc.) for each one.</p>
+<p>Full argument documentation, with runnable examples, is available in
+R with <code>?function_name</code>. The worked example of the complete
+workflow, which mirrors the Python demonstration notebook, is the
+vignette:
+<code>vignette(&quot;forecasting-tools&quot;, package = &quot;forecastingtools&quot;)</code>.</p>
+<h3 id="agreement-with-the-python-version">Agreement with the Python
+version</h3>
+<p>The test suite compares every function with values computed by the
+Python package on identical data
+(<code>tests/testthat/test-python-parity.R</code>, generated by
+<code>data-raw/python_reference.py</code>). Statistics, p-values,
+coefficients, standard errors and intervals agree to about
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>10</mn><mrow><mo>−</mo><mn>12</mn></mrow></msup><annotation encoding="application/x-tex">10^{-12}</annotation></semantics></math>
+or better, and static forecasts and their standard errors to about
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>10</mn><mrow><mo>−</mo><mn>14</mn></mrow></msup><annotation encoding="application/x-tex">10^{-14}</annotation></semantics></math>.
+The exception is <code>weak_efficiency_test()</code> with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo>&gt;</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">h &gt; 1</annotation></semantics></math>:
+the
+MA(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>h</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">h-1</annotation></semantics></math>)
+is estimated by different optimizers (<code>stats::arima</code> and
+Statsmodels), so the results agree to three or four digits.</p>
+<h2 id="course-resources-and-author">Course, resources, and author</h2>
+<p><strong>ATSE course material and Labs — Universidad Carlos III de
+Madrid:</strong> public link to be added when available. The course
+material supplies theory; the Labs supply fuller examples and exercises.
+This API reference is not a substitute for either.</p>
+<ul>
+<li><a href="https://github.com/maarranz/Forecasting-Tools-R">Repository
+and README</a></li>
+<li><a href="https://github.com/maarranz/Forecasting-Tools">Python
+version: Forecasting-Tools</a></li>
+</ul>
+<p><strong>ATSE software suite:</strong> ARIMA-Tools (Python) and <a href="https://github.com/maarranz/ARIMA-Tools-R">arimatools</a> (R) for
+empirical ARIMA modelling; <a href="https://github.com/maarranz/ARMA-theory">ARMA-Theory</a> for
+theoretical ARMA properties; <a href="https://github.com/maarranz/adl-theory">ADL-Theory</a> for
+theoretical ADL models; Forecasting-Tools (Python) and forecastingtools
+(R) for forecast evaluation and comparison; and ADL-Tools for empirical
+ADL modelling (forthcoming).</p>
+<ul>
+<li><a href="https://github.com/maarranz/Forecasting-Tools-R/blob/main/LICENSE.md">MIT
+License</a></li>
+<li><a href="forecastingtools_Documentation.qmd">Quarto source</a></li>
+</ul>
+<p><strong>Miguel A. Arranz, PhD</strong><br />
+Department of Economics<br />
+Universidad Carlos III de Madrid (UC3M)<br />
+Email: <a href="mailto:maarranz@eco.uc3m.es">maarranz@eco.uc3m.es</a><br />
+ORCID: <a href="https://orcid.org/0000-0002-5951-2284">0000-0002-5951-2284</a></p>
+<h3 id="rebuilding-the-html">Rebuilding the HTML</h3>
+<p>The examples are ordinary R code blocks, validated in a fresh session
+rather than executed during rendering. Equations are rendered as MathML,
+which needs no external script or fonts. With Quarto installed:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> pandoc docs/forecastingtools_Documentation.qmd <span class="dt">\</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--from</span> markdown <span class="at">--to</span> html5 <span class="at">--standalone</span> <span class="at">--toc</span> <span class="at">--toc-depth</span><span class="op">=</span>2 <span class="dt">\</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mathml</span> <span class="at">--embed-resources</span> <span class="at">-o</span> docs/index.html</span></code></pre></div>
+</body>
+</html>

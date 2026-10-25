@@ -1,0 +1,296 @@
+---
+title: 'forecastingtools (R): Public API'
+subtitle: Software reference for Applied Time Series Econometrics (ATSE)
+author: Miguel A. Arranz, PhD
+affiliation: Department of Economics, Universidad Carlos III de Madrid (UC3M)
+email: maarranz@eco.uc3m.es
+orcid: https://orcid.org/0000-0002-5951-2284
+lang: en
+minimal: true
+header-includes:
+- |
+  <style>
+  html { scroll-behavior: smooth; }
+  body { max-width: 980px; margin: 48px auto; padding: 0 24px; color: #263442;
+         font: 16px/1.6 system-ui, sans-serif; }
+  h1,h2,h3 { line-height: 1.25; color: #173e63; }
+  h2 { margin-top: 2.4rem; border-bottom: 1px solid #dbe3ea; padding-bottom: .4rem; }
+  a { color: #145b91; text-underline-offset: 3px; }
+  pre { background: #f3f6f8; border: 1px solid #dbe3ea; border-radius: 6px;
+        padding: 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  code { font-family: ui-monospace, monospace; font-size: .88em; }
+  table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+  th,td { padding: 10px 12px; text-align: left; vertical-align: top;
+          border-bottom: 1px solid #dbe3ea; }
+  th { background: #edf3f8; }
+  td:first-child { width: 65%; }
+  table:has(th:nth-child(3)) td:first-child { width: auto; }
+  table:has(th:nth-child(3)) td:nth-child(3) { width: 45%; }
+  table code { white-space: normal; overflow-wrap: anywhere; }
+  #TOC { background: #f3f6f8; padding: 16px 24px; border-radius: 6px; }
+  @media (max-width: 600px) { body { margin: 24px auto; padding: 0 16px; }
+    table { font-size: .76rem; } th,td { padding: 8px; } }
+  table { font-size: 0.88rem; }
+  </style>
+format:
+  html:
+    output-file: index.html
+    embed-resources: true
+    toc: true
+    toc-depth: 2
+    theme: none
+    code-overflow: wrap
+---
+
+
+## Overview and purpose
+
+`forecastingtools` is the R port of the Python package [Forecasting-Tools](https://github.com/maarranz/Forecasting-Tools), developed for the **Applied Time Series Econometrics (ATSE)** course at **Universidad Carlos III de Madrid**. It evaluates forecasts: static (sequential one-step) ARIMA forecasting, accuracy measures, diagnostics of a single forecast, and comparisons of two forecasts. Estimation, diagnostics and dynamic forecasting of ARIMA models are in the companion package [arimatools](https://github.com/maarranz/ARIMA-Tools-R).
+
+This document describes the software/API. The ATSE course material provides the econometric theory; the Labs provide fuller worked examples and exercises. The package exposes the **13 public functions** of the Python version, with the same names and arguments, except that `static_forecast()` takes the fitted model as `fit` and also accepts regressors through `xreg`.
+
+Two conventions hold throughout:
+
+- **Forecast errors are actual minus forecast**, $e_t = y_t - \hat y_t$. A positive mean error means underforecasting.
+- **Nothing is aligned, removed or reordered.** Actual values, forecasts and information variables are paired by position. Missing or non-finite values are errors, not silently dropped. If two inputs are `ts` objects, they must cover the same periods.
+
+Only `static_forecast()` needs a fitted model. Every other function takes plain numeric vectors (or `ts` objects), so it can evaluate forecasts from any source: ARIMA, ADL, a survey, or a published forecast.
+
+### What R already provides
+
+| forecastingtools | Closest existing R tool | Why the function is kept |
+|:--|:--|:--|
+| `static_forecast()` | `fitted(Arima(y_full, model = fit))` | Standard errors and intervals per step, evaluation sample only, regressor checks |
+| `forecast_accuracy()` | `forecast::accuracy()` | Errors defined as actual − forecast, MAPE in percent, strict input checks; same output as Python |
+| `unbiasedness_test()` | `lm()` + `lmtest::coeftest()` + `car::linearHypothesis()` | One call, joint Mincer–Zarnowitz restriction, Statsmodels' HAC conventions |
+| `weak_efficiency_test()` | `Box.test()`, `arima()` | MA(h−1) step for multistep forecasts, df adjustment |
+| `dm_test()` | `forecast::dm.test()` | `dm.test()` ties the bandwidth to h − 1 and always applies the HLN correction; here the bandwidth (automatic by default) and HLN are separate options. `dm.test(e1, e2, h = 1)` equals `dm_test(..., maxlags = 0, hln = TRUE)` |
+
+The MGN, orthogonality and encompassing tests have no direct R counterpart.
+
+## Installation and loading
+
+```r
+# install.packages("remotes")
+remotes::install_github("maarranz/Forecasting-Tools-R")
+```
+
+Dependencies (`forecast`, `sandwich`) are installed automatically. `arimatools` is optional: it builds the intervention regressors used with `static_forecast()`. To install a specific version, add the tag: `"maarranz/Forecasting-Tools-R@v0.1.0"`.
+
+```r
+library(forecast)
+library(forecastingtools)
+```
+
+### Small example used below
+
+The data-generating process is an ARMA(1,1) with mean 100, `y[t] - 100 = 0.7*(y[t-1] - 100) + eps[t] + 0.4*eps[t-1]`, with innovation standard deviation 2. Of the 300 observations, the first 250 are used for estimation and the last 50 for evaluation. Model 1 is the correctly specified ARMA(1,1); model 2 is a misspecified AR(1). (R's random-number generator differs from NumPy's, so the series is not the one in the Python documentation.)
+
+```r
+set.seed(20261008)
+y <- ts(100 + arima.sim(list(ar = 0.7, ma = 0.4), n = 300, sd = 2, n.start = 500))
+estimation <- window(y, end = 250)
+actual <- window(y, start = 251)
+fit1 <- Arima(estimation, order = c(1, 0, 1))
+fit2 <- Arima(estimation, order = c(1, 0, 0))
+```
+
+Run the blocks below in sequence in the same session. `static_forecast()` returns a data frame. The accuracy measures return numbers. Tests return a list of class `forecastingtools_test`, which prints as a short report (hypothesis, statistic, p-value, decision, covariance, coefficient table); every element can be extracted, for example `r$p.value` or `r$coefficients`.
+
+## Static forecasting
+
+A **static** (sequential one-step) forecast keeps the estimated parameters fixed and, for each evaluation period, forecasts the next observation, then adds the actual value to the information set before the next forecast. Each actual value is used only after its own forecast. A **dynamic** forecast (`arimatools::dynamic_forecast()`) is issued once at the end of the sample and never uses later observations; the first static forecast equals the one-step dynamic forecast.
+
+```r
+sf1 <- static_forecast(fit1, actual, level = 0.95)
+sf2 <- static_forecast(fit2, actual, level = 0.95)
+head(sf1)
+```
+
+The result has one row per evaluation period, with columns `time`, `actual`, `forecast`, `error`, `se`, `lower` and `upper`, and attributes `level` and `conditional`. `actual` is a numeric vector or a `ts` that starts in the period after the estimation sample. Each step re-applies the fitted model to the extended series with `forecast::Arima(y, model = fit)`, which re-runs the Kalman filter without re-estimating the coefficients or the innovation variance. The intervals are conditional Gaussian prediction intervals: they ignore parameter-estimation uncertainty. The fitted model is not modified.
+
+Accepted models: nonseasonal fits from `forecast::Arima()` or `forecast::auto.arima()`, with a mean or drift. Rejected, with an explanation: `stats::arima()` fits (they do not store the series), seasonal models, and models with a Box–Cox transformation (`lambda`).
+
+**Models with regressors.** The values of the regressors in the evaluation periods are supplied through `xreg`: a matrix with one row per evaluation period and the columns named as in estimation (a vector for a single regressor). A drift is handled automatically. There are two cases:
+
+- **Interventions** estimated in the estimation sample (AO, LS and TC columns from `arimatools::outlier_regressors()`) have a known future path: AO is 0, LS is 1 and TC keeps decaying. `arimatools::extend_interventions()` generates it, and values that contradict the definition are rejected. The forecasts are genuine ex ante forecasts.
+
+```r
+set.seed(2)
+z <- ts(cumsum(rnorm(140)), start = c(1990, 1), frequency = 4)
+z[60:140] <- z[60:140] + 5                     # level shift in 2004Q4
+z_est <- window(z, end = c(2014, 4))
+z_eva <- window(z, start = c(2015, 1))
+L <- arimatools::outlier_regressors(z_est, dates = "2004Q4", types = "LS")
+fit_ls <- Arima(z_est, order = c(1, 1, 0), xreg = L)
+sf_ls <- static_forecast(fit_ls, z_eva, xreg = arimatools::extend_interventions(L, 40))
+```
+
+- **Other regressors.** A static forecast of $y_t$ uses $x_t$. If $x_t$ is not known at the forecast origin (a contemporaneous stochastic regressor), the result is a **conditional (ex post) forecast**: it overstates real-time accuracy, its intervals ignore the uncertainty about $x_t$, and the efficiency and orthogonality tests no longer refer to the information at the origin. A message says so and `attr(result, "conditional")` is `TRUE`. Lagged regressors known at the origin give ex ante forecasts.
+
+Outliers detected in the *evaluation* period cannot be added after estimation: that would use information from after the forecast origins.
+
+## Forecast accuracy
+
+With $n$ forecasts,
+
+$$\mathrm{ME} = \tfrac1n \textstyle\sum e_t, \quad \mathrm{MAE} = \tfrac1n \sum |e_t|, \quad \mathrm{MSE} = \tfrac1n \sum e_t^2, \quad \mathrm{RMSE} = \sqrt{\mathrm{MSE}}, \quad \mathrm{MAPE} = \tfrac{100}{n} \sum |e_t / y_t|.$$
+
+```r
+forecast_accuracy(actual, sf1$forecast)    # ME, MAE, MSE, RMSE, MAPE
+rmse(actual, sf2$forecast)                 # one measure
+```
+
+The denominator is $n$, with no degrees-of-freedom adjustment. ME measures signed bias, and positive and negative errors cancel; the other measures describe the size of the errors, and MSE and RMSE always rank models in the same way. MAPE is in percent and is undefined when an actual value is zero (an error is raised; the other measures accept zeros). These are descriptive measures: a smaller RMSE in one sample is not evidence that a model is better.
+
+## Diagnostics of a single forecast
+
+All tests take `alpha = 0.05` (the significance level: `reject_null` is `p.value < alpha`, and confidence intervals have coverage `1 - alpha`).
+
+**HAC inference.** Unless stated otherwise, inference is Newey–West with Bartlett weights $1 - j/(L+1)$, no prewhitening and no small-sample adjustment, computed with `sandwich::NeweyWest(fit, lag = L, prewhite = FALSE, adjust = FALSE)`. This reproduces Statsmodels' `cov_type = "HAC"` with `use_correction = False`, and therefore the Python results. `maxlags = NULL` selects the bandwidth $L = \min(n-1, \lfloor 4 (n/100)^{2/9} \rfloor)$; an explicit `maxlags` must be a non-negative integer smaller than $n$. Note that `NeweyWest()` prewhitens and adjusts by default, so calling it with its defaults gives different standard errors.
+
+### Unbiasedness
+
+- `method = "mean_error"` estimates $e_t = a + u_t$ and tests $H_0: a = 0$; the estimate of $a$ is the mean error.
+- `method = "mincer_zarnowitz"` estimates $y_t = a + b \hat y_t + u_t$ and tests the joint restriction $H_0: a = 0, b = 1$.
+
+```r
+unbiasedness_test(actual, sf1$forecast)
+unbiasedness_test(actual, sf1$forecast, method = "mincer_zarnowitz")
+unbiasedness_test(actual, sf1$forecast, cov_type = "nonrobust")
+```
+
+With `cov_type = "HAC"` (default) the mean-error test is a normal z test and the joint test an asymptotic $\chi^2(2)$. With `cov_type = "nonrobust"` the covariance is the conventional OLS one: a Student $t(n-1)$ test (the one-sample t test of the errors) or the classical $F(2, n-2)$ test; `maxlags` must then be `NULL`.
+
+### Weak efficiency
+
+Optimal one-step errors are serially uncorrelated; optimal $h$-step errors from consecutive origins follow at most an MA($h-1$).
+
+```r
+weak_efficiency_test(actual, sf1$forecast, h = 1, lags = 10)
+```
+
+For `h = 1` the Ljung–Box test is applied to the errors, with `lags` degrees of freedom. For `h > 1` an MA($h-1$) with a constant is estimated by exact maximum likelihood (`stats::arima(method = "ML")`) and the test is applied to its residuals, with `lags - (h - 1)` degrees of freedom; `lags` must exceed $h-1$. The errors are centered, so this test does not examine bias.
+
+### Orthogonality
+
+Estimates $e_t = a + \gamma' z_t + u_t$ and tests $H_0: a = 0, \gamma = 0$ jointly, where $z_t$ are variables known when the forecast was made. Here $y_{t-1}$, built from the complete series so that the first evaluation row uses the last estimation observation:
+
+```r
+previous <- as.numeric(y)[250:299]          # y[t-1] for t = 251, ..., 300
+orthogonality_test(actual, sf1$forecast, cbind(previous = previous))
+```
+
+`information` is a vector (one variable), a matrix or a data frame, with one row per forecast and no intercept column. **Timing is your responsibility**: the function does not shift or align anything, and information not available at the forecast origin introduces look-ahead bias. The inference options are those of `unbiasedness_test()` (HAC $\chi^2(k)$ or classical $F(k, n-k)$, with $k$ counting the intercept). `h` is recorded as metadata; for overlapping multistep errors use HAC with `maxlags` of at least $h-1$, which is reported in `bandwidth_covers_overlap`.
+
+## Comparing two forecasts
+
+The comparison functions take `actual`, `forecast1` and `forecast2`. Model 1 here is the ARMA(1,1) and model 2 the AR(1).
+
+### Morgan–Granger–Newbold
+
+With $u_t = e_{1t} + e_{2t}$ and $v_t = e_{1t} - e_{2t}$, estimates $u_t = a + b v_t + \varepsilon_t$ and tests $H_0: b = 0$, that is $\mathrm{Var}(e_1) = \mathrm{Var}(e_2)$.
+
+```r
+mgn_test(actual, sf1$forecast, sf2$forecast)
+mgn_test(actual, sf1$forecast, sf2$forecast, cov_type = "nonrobust")
+```
+
+**Only if both errors have zero population means** is this a test of equal mean squared forecast errors; otherwise it compares centered error variances. The conventional version equals the classical statistic $r\sqrt{(n-2)/(1-r^2)}$ with $r = \mathrm{Corr}(u, v)$. The result also reports `mean_errors`, `mse` and `mse_difference` (descriptive only).
+
+### Diebold–Mariano
+
+With $d_t = L(e_{1t}) - L(e_{2t})$, tests $H_0: E(d_t) = 0$ directly, without assuming zero-mean errors. Negative values of $\bar d$ favour model 1.
+
+```r
+dm_test(actual, sf1$forecast, sf2$forecast)                       # squared loss
+dm_test(actual, sf1$forecast, sf2$forecast, loss = "absolute")
+dm_test(actual, sf1$forecast, sf2$forecast, hln = TRUE)           # HLN correction
+dm_test(actual, sf1$forecast, sf2$forecast, alternative = "less") # model 1 better
+```
+
+The statistic is computed directly as $\bar d / \sqrt{\hat\Omega / n}$, with $\hat\Omega$ the Bartlett long-run variance of $d_t$. It is exactly the HAC t statistic of the regression of $d_t$ on a constant:
+
+```r
+d <- (actual - sf1$forecast)^2 - (actual - sf2$forecast)^2
+reg <- lm(d ~ 1)
+r <- dm_test(actual, sf1$forecast, sf2$forecast)
+coef(reg) / sqrt(sandwich::NeweyWest(reg, lag = r$maxlags, prewhite = FALSE,
+                                     adjust = FALSE))      # equals r$dm_statistic
+```
+
+`hln = TRUE` multiplies the statistic by the Harvey–Leybourne–Newbold factor $\sqrt{(n+1-2h+h(h-1)/n)/n}$ and uses a Student $t(n-1)$; otherwise the reference is the standard normal. `h` is used only by this correction: it does not shift observations or choose the bandwidth.
+
+### Forecast encompassing
+
+Does forecast 1 contain all the useful (linear) information in forecast 2, or the reverse? The two directions are separate hypotheses: `direction = "1_encompasses_2"` (default) or `"2_encompasses_1"`.
+
+| `method` | Regression (direction 1) | $H_0$ |
+|:--|:--|:--|
+| `"difference"` (default) | $e_{1t} = \beta (\hat y_{1t} - \hat y_{2t}) + u_t$ | $\beta = 0$ |
+| `"cross_forecast"` | $e_{1t} = \delta \hat y_{2t} + u_t$ | $\delta = 0$ |
+| `"unrestricted"` | $y_t = a_0 + a_1 \hat y_{1t} + a_2 \hat y_{2t} + u_t$ | $(a_1, a_2) = (1, 0)$ |
+
+```r
+encompassing_test(actual, sf1$forecast, sf2$forecast)
+encompassing_test(actual, sf1$forecast, sf2$forecast, direction = "2_encompasses_1")
+encompassing_test(actual, sf1$forecast, sf2$forecast, method = "unrestricted")
+```
+
+In direction 2 the dependent variable is $e_{2t}$ (difference and cross-forecast; the sign of the forecast difference is the same in both directions) or the null is $(a_1, a_2) = (0, 1)$ (unrestricted). `include_intercept = TRUE` adds an unrestricted intercept to the difference and cross-forecast regressions; the unrestricted regression always has one. Inference is always HAC: normal for one restriction, $\chi^2(2)$ for the unrestricted test. Not rejecting means the restriction cannot be rejected, not that it holds; rejecting does not mean the competing forecast is more accurate.
+
+## Compact API summary
+
+`fit` is a nonseasonal model from `forecast::Arima()` or `forecast::auto.arima()`. All other inputs are numeric vectors or `ts` objects paired by position.
+
+| Public call | Return / contents |
+|:--|:--|
+| `static_forecast(fit, actual, level = 0.95, xreg = NULL)` | data frame: time, actual, forecast, error, se, lower, upper |
+| `me(actual, forecast)` | number: mean error |
+| `mae(actual, forecast)` | number: mean absolute error |
+| `mse(actual, forecast)` | number: mean squared error |
+| `rmse(actual, forecast)` | number: root mean squared error |
+| `mape(actual, forecast)` | number: mean absolute percentage error (percent) |
+| `forecast_accuracy(actual, forecast)` | named vector: ME, MAE, MSE, RMSE, MAPE |
+| `unbiasedness_test(actual, forecast, method = "mean_error", cov_type = "HAC", maxlags = NULL, alpha = 0.05)` | test: mean-error or Mincer–Zarnowitz |
+| `weak_efficiency_test(actual, forecast, h = 1, lags = 10, alpha = 0.05)` | test: Ljung–Box on errors or MA(h−1) residuals |
+| `orthogonality_test(actual, forecast, information, h = 1, cov_type = "HAC", maxlags = NULL, alpha = 0.05)` | test: joint Wald test of intercept and information coefficients |
+| `mgn_test(actual, forecast1, forecast2, cov_type = "HAC", maxlags = NULL, alpha = 0.05)` | test: Morgan–Granger–Newbold slope |
+| `dm_test(actual, forecast1, forecast2, loss = "squared", h = 1, alternative = "two-sided", maxlags = NULL, hln = FALSE, alpha = 0.05)` | test: Diebold–Mariano, optional HLN |
+| `encompassing_test(actual, forecast1, forecast2, method = "difference", direction = "1_encompasses_2", include_intercept = FALSE, maxlags = NULL, alpha = 0.05)` | test: forecast encompassing |
+
+A test result contains the same fields as the Python dictionary, with three changes: `pvalue` is `p.value`; `parameters`, `standard_errors` and `confidence_intervals` are combined in one `coefficients` data frame (`term`, `estimate`, `std.error`, `conf.low`, `conf.high`); and Python's `None` is `NA`. Use `names(r)` to list the fields, and `?dm_test` (etc.) for each one.
+
+Full argument documentation, with runnable examples, is available in R with `?function_name`. The worked example of the complete workflow, which mirrors the Python demonstration notebook, is the vignette: `vignette("forecasting-tools", package = "forecastingtools")`.
+
+### Agreement with the Python version
+
+The test suite compares every function with values computed by the Python package on identical data (`tests/testthat/test-python-parity.R`, generated by `data-raw/python_reference.py`). Statistics, p-values, coefficients, standard errors and intervals agree to about $10^{-12}$ or better, and static forecasts and their standard errors to about $10^{-14}$. The exception is `weak_efficiency_test()` with $h > 1$: the MA($h-1$) is estimated by different optimizers (`stats::arima` and Statsmodels), so the results agree to three or four digits.
+
+## Course, resources, and author
+
+**ATSE course material and Labs — Universidad Carlos III de Madrid:** public link to be added when available. The course material supplies theory; the Labs supply fuller examples and exercises. This API reference is not a substitute for either.
+
+- [Repository and README](https://github.com/maarranz/Forecasting-Tools-R)
+- [Python version: Forecasting-Tools](https://github.com/maarranz/Forecasting-Tools)
+
+**ATSE software suite:** ARIMA-Tools (Python) and [arimatools](https://github.com/maarranz/ARIMA-Tools-R) (R) for empirical ARIMA modelling; [ARMA-Theory](https://github.com/maarranz/ARMA-theory) for theoretical ARMA properties; [ADL-Theory](https://github.com/maarranz/adl-theory) for theoretical ADL models; Forecasting-Tools (Python) and forecastingtools (R) for forecast evaluation and comparison; and ADL-Tools for empirical ADL modelling (forthcoming).
+
+- [MIT License](https://github.com/maarranz/Forecasting-Tools-R/blob/main/LICENSE.md)
+- [Quarto source](forecastingtools_Documentation.qmd)
+
+**Miguel A. Arranz, PhD**\
+Department of Economics\
+Universidad Carlos III de Madrid (UC3M)\
+Email: [maarranz@eco.uc3m.es](mailto:maarranz@eco.uc3m.es)\
+ORCID: [0000-0002-5951-2284](https://orcid.org/0000-0002-5951-2284)
+
+### Rebuilding the HTML
+
+The examples are ordinary R code blocks, validated in a fresh session rather than executed during rendering. Equations are rendered as MathML, which needs no external script or fonts. With Quarto installed:
+
+```bash
+quarto pandoc docs/forecastingtools_Documentation.qmd \
+  --from markdown --to html5 --standalone --toc --toc-depth=2 \
+  --mathml --embed-resources -o docs/index.html
+```
