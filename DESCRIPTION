@@ -26,7 +26,7 @@ Suggests:
     knitr,
     rmarkdown,
     testthat (>= 3.0.0)
-Remotes: maarranz/ARIMA-Tools-R
+Remotes: arimatools=maarranz/ARIMA-Tools-R
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
