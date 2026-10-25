@@ -1,0 +1,295 @@
+---
+title: "Static forecasting and forecast evaluation"
+author: "Miguel A. Arranz"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Static forecasting and forecast evaluation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4)
+has_arimatools <- requireNamespace("arimatools", quietly = TRUE)
+```
+
+This vignette is the R version of the demonstration notebook of the Python
+package Forecasting-Tools. It simulates an ARMA(1,1), estimates a correctly
+specified ARMA(1,1) and a misspecified AR(1), produces static forecasts for
+an evaluation sample, and evaluates and compares them:
+
+| Step | Functions |
+|:--|:--|
+| Static forecasting | `static_forecast()` |
+| Accuracy | `me()`, `mae()`, `mse()`, `rmse()`, `mape()`, `forecast_accuracy()` |
+| Diagnostics of each forecast | `unbiasedness_test()`, `weak_efficiency_test()`, `orthogonality_test()` |
+| Comparison of two forecasts | `mgn_test()`, `dm_test()`, `encompassing_test()` |
+
+Forecast errors are always **actual minus forecast**. The numbers differ from
+those of the Python notebook, because R and NumPy generate different random
+numbers; given the same data, both packages give the same results.
+
+```{r, message = FALSE}
+library(forecastingtools)
+library(forecast)
+```
+
+## 1. Simulated data and estimation
+
+The data-generating process is
+$y_t - \mu = \phi (y_{t-1} - \mu) + \varepsilon_t + \theta \varepsilon_{t-1}$
+with $\phi = 0.7$, $\theta = 0.4$, $\mu = 100$ and $\sigma = 2$. After a
+burn-in of 500 observations we keep 300: the first 250 for estimation, the
+last 50 for evaluation.
+
+```{r}
+set.seed(20261008)
+y <- ts(100 + arima.sim(list(ar = 0.7, ma = 0.4), n = 300, sd = 2, n.start = 500))
+estimation <- window(y, end = 250)
+actual <- window(y, start = 251)
+
+models <- list(
+  "ARMA(1,1)" = Arima(estimation, order = c(1, 0, 1)),
+  "AR(1)"     = Arima(estimation, order = c(1, 0, 0))
+)
+lapply(models, coef)
+```
+
+For stationary models, `intercept` is the mean $\mu$, not the constant of the
+recursion. The correctly specified model need not beat the simpler one in a
+finite sample.
+
+## 2. Static forecasting
+
+A **static** (sequential one-step) forecast keeps the estimated parameters
+fixed and, for each evaluation period,
+
+1. forecasts the next observation with the information available,
+2. observes the actual value, and
+3. adds it to the information set before the next forecast.
+
+Each actual value is used only after its own forecast. A **dynamic** forecast,
+by contrast, is issued once at the end of the estimation sample and never uses
+later observations.
+
+```{r}
+forecasts <- lapply(models, static_forecast, actual = actual, level = 0.95)
+head(forecasts[["ARMA(1,1)"]], 4)
+```
+
+The intervals are conditional Gaussian prediction intervals: they ignore the
+uncertainty of the estimated parameters. The first static forecast is the
+one-step dynamic forecast; afterwards the two differ.
+
+```{r}
+stopifnot(
+  all.equal(forecasts[["ARMA(1,1)"]]$forecast[1],
+            as.numeric(forecast(models[["ARMA(1,1)"]], h = 1)$mean)),
+  all.equal(forecasts[["ARMA(1,1)"]]$error,
+            as.numeric(actual) - forecasts[["ARMA(1,1)"]]$forecast)
+)
+```
+
+```{r, fig.cap = "Static one-step forecasts, with the 95% interval of the ARMA(1,1)."}
+arma <- forecasts[["ARMA(1,1)"]]; ar <- forecasts[["AR(1)"]]
+plot(arma$time, arma$actual, type = "l", lwd = 2, ylim = range(arma$lower, arma$upper),
+     xlab = "Evaluation period", ylab = "y")
+polygon(c(arma$time, rev(arma$time)), c(arma$lower, rev(arma$upper)),
+        col = adjustcolor("steelblue", 0.15), border = NA)
+lines(arma$time, arma$forecast, col = "steelblue", lty = 2, lwd = 1.5)
+lines(ar$time, ar$forecast, col = "darkorange", lty = 3, lwd = 2)
+legend("topleft", c("Actual", "ARMA(1,1)", "AR(1)"), lty = 1:3,
+       col = c("black", "steelblue", "darkorange"), lwd = 2, bty = "n")
+```
+
+## 3. Forecast accuracy
+
+With $e_t = y_t - \hat y_t$ and $n = 50$,
+$\mathrm{ME} = \frac1n \sum e_t$, $\mathrm{MAE} = \frac1n \sum |e_t|$,
+$\mathrm{MSE} = \frac1n \sum e_t^2$, $\mathrm{RMSE} = \sqrt{\mathrm{MSE}}$ and
+$\mathrm{MAPE} = \frac{100}{n} \sum |e_t / y_t|$.
+
+```{r}
+accuracy <- sapply(forecasts, function(f) forecast_accuracy(f$actual, f$forecast))
+round(accuracy, 4)
+```
+
+ME measures bias (positive: underforecasting), and positive and negative errors
+cancel; the other measures describe the size of the errors. MSE and RMSE
+always rank models in the same way. A lower RMSE is a realized outcome in this
+sample, not evidence that one model is better: that is what the tests in
+Sections 5 to 7 address.
+
+## 4. Diagnostics of each forecast
+
+### Unbiasedness
+
+The **mean-error test** estimates $e_t = a + u_t$ and tests $H_0: a = 0$. The
+**Mincer-Zarnowitz test** estimates $y_t = a + b \hat y_t + u_t$ and tests
+$H_0: a = 0, b = 1$ jointly. Inference is HAC (Newey-West, Bartlett weights,
+automatic bandwidth, no small-sample adjustment) by default.
+
+```{r}
+unbiasedness_test(actual, arma$forecast)
+sapply(forecasts, function(f) {
+  r <- unbiasedness_test(actual, f$forecast, method = "mincer_zarnowitz")
+  c(intercept = r$coefficients$estimate[1], slope = r$coefficients$estimate[2],
+    chi2 = r$statistic, p.value = r$p.value)
+})
+```
+
+### Weak efficiency
+
+Optimal one-step errors are serially uncorrelated. With `h = 1`,
+`weak_efficiency_test()` applies the Ljung-Box test to the errors; it does
+not test bias, because the errors are centered.
+
+```{r}
+sapply(forecasts, function(f) {
+  r <- weak_efficiency_test(actual, f$forecast, h = 1, lags = 10)
+  c(Q = r$statistic, df = r$df, p.value = r$p.value)
+})
+```
+
+### Orthogonality
+
+The last observed value $y_{t-1}$ is known when $y_t$ is forecast. We build it
+from the complete series, so the first evaluation row uses the last estimation
+observation. The function never shifts or aligns the information itself.
+
+```{r}
+previous <- as.numeric(y)[250:299]          # y_{t-1} for t = 251, ..., 300
+stopifnot(previous[1] == estimation[250])
+r <- orthogonality_test(actual, arma$forecast, cbind(previous = previous))
+r
+```
+
+For the AR(1), the forecast is an affine function of $y_{t-1}$, so its
+Mincer-Zarnowitz and orthogonality regressions span the same information and
+give the same statistic: they are not independent confirmations.
+
+```{r}
+c(MZ = unbiasedness_test(actual, ar$forecast, "mincer_zarnowitz")$statistic,
+  orthogonality = orthogonality_test(actual, ar$forecast, previous)$statistic)
+```
+
+## 5. Morgan-Granger-Newbold
+
+With $u_t = e_{1t} + e_{2t}$ and $v_t = e_{1t} - e_{2t}$, the MGN test
+regresses $u_t$ on $v_t$ and tests a zero slope:
+$\mathrm{Cov}(u, v) = \mathrm{Var}(e_1) - \mathrm{Var}(e_2) = 0$. Only if both
+errors have zero population means is this equal MSFE.
+
+```{r}
+mgn <- mgn_test(actual, arma$forecast, ar$forecast)
+mgn
+mgn_c <- mgn_test(actual, arma$forecast, ar$forecast, cov_type = "nonrobust")
+# The conventional version is the classical correlation statistic
+stopifnot(all.equal(mgn_c$statistic,
+                    mgn_c$correlation * sqrt(48 / (1 - mgn_c$correlation^2))))
+```
+
+## 6. Diebold-Mariano
+
+With the loss differential $d_t = L(e_{1t}) - L(e_{2t})$, the DM test tests
+$H_0: E(d_t) = 0$ directly, without assuming zero-mean errors. Negative mean
+differentials favour model 1 (ARMA).
+
+```{r}
+sapply(c("squared", "absolute"), function(loss) {
+  r <- dm_test(actual, arma$forecast, ar$forecast, loss = loss)
+  c(mean_loss_diff = r$mean_loss_diff, DM = r$statistic, p.value = r$p.value)
+})
+```
+
+### The DM test is a HAC regression on a constant
+
+`dm_test()` computes $\bar d / \sqrt{\hat\Omega / n}$ directly. This is
+exactly the HAC t statistic of the regression of $d_t$ on a constant, with the
+same Bartlett bandwidth and no small-sample adjustment. The check below
+estimates that regression with `lm()` and `sandwich::NeweyWest()`.
+
+```{r}
+dm <- dm_test(actual, arma$forecast, ar$forecast)
+d <- (actual - arma$forecast)^2 - (actual - ar$forecast)^2
+reg <- lm(d ~ 1)
+V <- sandwich::NeweyWest(reg, lag = dm$maxlags, prewhite = FALSE, adjust = FALSE)
+comparison <- rbind(
+  "Direct DM"      = c(dm$mean_loss_diff, dm$se, dm$dm_statistic, dm$p.value),
+  "HAC regression" = c(coef(reg), sqrt(V[1, 1]), coef(reg) / sqrt(V[1, 1]),
+                       2 * pnorm(-abs(coef(reg) / sqrt(V[1, 1])))))
+colnames(comparison) <- c("mean", "se", "statistic", "p.value")
+comparison
+stopifnot(max(abs(comparison[1, ] - comparison[2, ])) < 1e-12)
+```
+
+`prewhite = FALSE` and `adjust = FALSE` are needed: by default
+`NeweyWest()` prewhitens and applies a small-sample factor.
+
+### Harvey-Leybourne-Newbold correction
+
+The HLN correction multiplies the statistic by
+$\sqrt{(n + 1 - 2h + h(h-1)/n)/n}$ and uses a Student t(n - 1).
+
+```{r}
+hln <- dm_test(actual, arma$forecast, ar$forecast, hln = TRUE)
+c(DM = dm$statistic, HLN = hln$statistic, p_DM = dm$p.value, p_HLN = hln$p.value)
+```
+
+## 7. Forecast encompassing
+
+Does one forecast contain all the useful information of the other? With
+$d_t = \hat y_{1t} - \hat y_{2t}$, the difference regression $e_{1t} = \beta d_t
++ u_t$ tests whether ARMA(1,1) encompasses AR(1), and $e_{2t} = \beta d_t +
+u_t$ the reverse. The two directions are separate hypotheses.
+
+```{r}
+grid <- expand.grid(method = c("difference", "cross_forecast", "unrestricted"),
+                    direction = c("1_encompasses_2", "2_encompasses_1"),
+                    stringsAsFactors = FALSE)
+grid$statistic <- NA_real_
+grid$p.value <- NA_real_
+for (i in seq_len(nrow(grid))) {
+  r <- encompassing_test(actual, arma$forecast, ar$forecast,
+                         method = grid$method[i], direction = grid$direction[i])
+  grid$statistic[i] <- r$statistic; grid$p.value[i] <- r$p.value
+}
+grid
+```
+
+Not rejecting a direction means the restriction cannot be rejected, not that
+it holds; rejecting it does not mean the competing forecast is more accurate.
+
+## 8. Models with interventions
+
+A model estimated with intervention regressors (additive outliers, level
+shifts, temporary changes) can be evaluated by static forecasting too, because
+the future path of each intervention is known: an AO is 0, an LS stays at 1
+and a TC keeps decaying. `arimatools::extend_interventions()` generates these
+values.
+
+```{r, eval = has_arimatools}
+set.seed(2)
+z <- ts(cumsum(rnorm(140)), start = c(1990, 1), frequency = 4)
+z[60:140] <- z[60:140] + 5                   # level shift in 2004Q4
+z_est <- window(z, end = c(2014, 4))
+z_eva <- window(z, start = c(2015, 1))
+X <- arimatools::outlier_regressors(z_est, dates = "2004Q4", types = "LS")
+fit_ls <- Arima(z_est, order = c(1, 1, 0), xreg = X)
+fit_no <- Arima(z_est, order = c(1, 1, 0))
+sf_ls <- static_forecast(fit_ls, z_eva, xreg = arimatools::extend_interventions(X, 40))
+sf_no <- static_forecast(fit_no, z_eva)
+dm_test(z_eva, sf_ls$forecast, sf_no$forecast)
+```
+
+Interventions detected in the *evaluation* period cannot be added this way:
+that would use information from after the forecast origins, and
+`static_forecast()` rejects intervention values that contradict their
+definition.
+
+For other regressors, a static forecast of $y_t$ uses $x_t$. If $x_t$ is not
+known at the forecast origin, the result is a conditional (ex post) forecast,
+which overstates real-time accuracy; `static_forecast()` then prints a message
+and marks the result with `attr(, "conditional") = TRUE`.

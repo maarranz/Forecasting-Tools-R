@@ -1,0 +1,33 @@
+Package: forecastingtools
+Type: Package
+Title: Teaching-Oriented Tools for Forecast Evaluation
+Version: 0.1.0
+Authors@R: person("Miguel A.", "Arranz", email = "maarranz@eco.uc3m.es",
+    role = c("aut", "cre"), comment = c(ORCID = "0000-0002-5951-2284"))
+Description: Static (sequential one-step) ARIMA forecasting, forecast accuracy
+    measures and tests of forecast performance, developed for Applied Time
+    Series Econometrics (ATSE) at Universidad Carlos III de Madrid. R port of
+    the Python package Forecasting-Tools. Provides mean errors and other
+    accuracy measures, unbiasedness (mean-error and Mincer-Zarnowitz), weak
+    efficiency and orthogonality tests, and the Morgan-Granger-Newbold,
+    Diebold-Mariano (with the Harvey-Leybourne-Newbold correction) and
+    forecast encompassing comparisons, with Newey-West (Bartlett) inference.
+License: MIT + file LICENSE
+URL: https://github.com/maarranz/Forecasting-Tools-R
+BugReports: https://github.com/maarranz/Forecasting-Tools-R/issues
+Encoding: UTF-8
+Depends: R (>= 4.1)
+Imports:
+    forecast (>= 8.21),
+    sandwich,
+    stats
+Suggests:
+    arimatools,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Remotes: maarranz/ARIMA-Tools-R
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1

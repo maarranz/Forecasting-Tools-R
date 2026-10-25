@@ -1,0 +1,119 @@
+"""Reference values from the Python package Forecasting-Tools.
+
+Usage, from the root of forecastingtools (after data-raw/reference_data.R):
+
+    python data-raw/python_reference.py /path/to/Forecasting-Tools
+
+Runs the Python functions on the data in data-raw/*.csv and writes
+tests/testthat/helper-python-reference.R, which the testthat suite compares
+with the R functions.
+"""
+import math
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from statsmodels.tsa.arima.model import ARIMA
+
+sys.path.insert(0, str(Path(sys.argv[1]).resolve()))
+import forecasting_tools as ft  # noqa: E402
+
+root = Path(__file__).resolve().parents[1]
+samples = pd.read_csv(root / "data-raw" / "reference_samples.csv")
+series = pd.read_csv(root / "data-raw" / "reference_series.csv")
+params = pd.read_csv(root / "data-raw" / "reference_params.csv").set_index("model")
+y, f1, f2 = (samples[c].to_numpy() for c in ("actual", "forecast1", "forecast2"))
+
+
+def to_r(value):
+    """Translate Python values into R source."""
+    if value is None:
+        return "NULL"
+    if isinstance(value, (bool, np.bool_)):
+        return "TRUE" if value else "FALSE"
+    if isinstance(value, (int, np.integer)):
+        return f"{int(value)}L"
+    if isinstance(value, (float, np.floating)):
+        return "NA_real_" if math.isnan(value) else repr(float(value))
+    if isinstance(value, str):
+        return '"' + value.replace('"', '\\"') + '"'
+    if isinstance(value, (list, tuple, np.ndarray)):
+        return "c(" + ", ".join(to_r(v) for v in value) + ")"
+    if isinstance(value, dict):
+        items = ", ".join(f"`{k}` = {to_r(v)}" for k, v in value.items())
+        return f"list({items})"
+    raise TypeError(type(value))
+
+
+def keep(result, drop=("estimation",)):
+    return {k: v for k, v in result.items() if k not in drop and k != "msfe_interpretation_note"}
+
+
+ref = {}
+# The data themselves, so that the tests do not need data-raw/
+ref["data"] = {c: samples[c].to_numpy() for c in samples.columns}
+ref["series"] = {c: series[c].to_numpy() for c in series.columns}
+ref["params"] = {m: dict(params.loc[m]) for m in params.index}
+ref["accuracy"] = dict(ft.forecast_accuracy(y, f1))
+
+ref["unbiasedness"] = {}
+for method in ("mean_error", "mincer_zarnowitz"):
+    for cov in ("HAC", "nonrobust"):
+        ref["unbiasedness"][f"{method}_{cov}"] = keep(ft.unbiasedness_test(y, f1, method=method, cov_type=cov))
+    ref["unbiasedness"][f"{method}_HAC3"] = keep(ft.unbiasedness_test(y, f1, method=method, maxlags=3))
+
+ref["weak"] = {
+    "h1": keep(ft.weak_efficiency_test(y, f1, h=1, lags=10)),
+    "h2": keep(ft.weak_efficiency_test(y, f1, h=2, lags=8)),
+    "h3": keep(ft.weak_efficiency_test(y, f2, h=3, lags=8)),
+}
+
+info = samples[["info_a", "info_b"]]
+ref["orthogonality"] = {
+    "a_HAC": keep(ft.orthogonality_test(y, f1, samples["info_a"].to_numpy())),
+    "a_nonrobust": keep(ft.orthogonality_test(y, f1, samples["info_a"].to_numpy(), cov_type="nonrobust")),
+    "ab_HAC2": keep(ft.orthogonality_test(y, f1, info, h=3, maxlags=2)),
+}
+
+ref["mgn"] = {cov: keep(ft.mgn_test(y, f1, f2, cov_type=cov)) for cov in ("HAC", "nonrobust")}
+ref["mgn"]["HAC0"] = keep(ft.mgn_test(y, f1, f2, maxlags=0))
+
+ref["dm"] = {}
+for loss in ("squared", "absolute"):
+    for hln in (False, True):
+        for alternative in ("two-sided", "less", "greater"):
+            key = f"{loss}_{'hln' if hln else 'dm'}_{alternative}"
+            ref["dm"][key] = keep(ft.dm_test(y, f1, f2, loss=loss, hln=hln, h=2 if hln else 1,
+                                             alternative=alternative))
+ref["dm"]["squared_lag5"] = keep(ft.dm_test(y, f1, f2, maxlags=5))
+
+ref["encompassing"] = {}
+for method in ("difference", "cross_forecast", "unrestricted"):
+    for direction in ("1_encompasses_2", "2_encompasses_1"):
+        for intercept in ((False,) if method == "unrestricted" else (False, True)):
+            for lag in (None, 2):
+                key = f"{method}_{direction}_{intercept}_{lag}"
+                ref["encompassing"][key] = keep(ft.encompassing_test(
+                    y, f1, f2, method=method, direction=direction,
+                    include_intercept=intercept, maxlags=lag))
+
+# Static forecasts with the parameters estimated in R
+ref["static"] = {}
+for name, column, order, trend in (("arma11", "y", (1, 0, 1), "c"),
+                                   ("arima111_drift", "z", (1, 1, 1), "t")):
+    data = series[column].to_numpy()
+    model = ARIMA(data[:120], order=order, trend=trend)
+    p = params.loc[name]
+    values = {"const": p.trend, "x1": p.trend, "ar.L1": p.ar1, "ma.L1": p.ma1, "sigma2": p.sigma2}
+    results = model.filter([values[k] for k in model.param_names])
+    out = ft.static_forecast(results, data[120:], level=0.9)
+    ref["static"][name] = {c.lower(): out[c].to_numpy() for c in out.columns}
+
+target = root / "tests" / "testthat" / "helper-python-reference.R"
+target.write_text(
+    "# Generated by data-raw/python_reference.py from the Python package\n"
+    "# Forecasting-Tools: do not edit by hand.\n"
+    f"py_ref <- {to_r(ref)}\n"
+)
+print("Wrote", target)
